@@ -15,7 +15,7 @@ exports.handler = (event, context, callback) => {
       fs.writeFile(imageFile, body, 'binary', (error) => {
         if(error){
           const resp = {state: "failure", message: `write error: ${error}`}
-          callback(error, JSON.stringify(resp));
+          callback(error, resp);
           return
         }
         const content_type = response.headers['content-type']
@@ -23,7 +23,7 @@ exports.handler = (event, context, callback) => {
         sharp(imageFile).resize(200, 200).max().toFile(thumbFile, (error, info) => {
           if (error) {
             const resp = {state: "failure", message: `resize error: ${error}`}
-            callback(error, JSON.stringify(resp));
+            callback(error, resp);
             return
           }
           console.log(info)
@@ -39,7 +39,7 @@ exports.handler = (event, context, callback) => {
           new aws.S3().upload(params, (error, data) => {
             if (error) {
               const resp = {state: "failure", message: `image upload error: ${error}`}
-              callback(error, JSON.stringify(resp));
+              callback(error, resp);
               return
             }
             const params = {
@@ -53,14 +53,14 @@ exports.handler = (event, context, callback) => {
             new aws.S3().upload(params, (error, data) => {
               if (error) {
                 const resp = {state: "failure", message: `thumbnail upload error: ${error}`}
-                callback(error, JSON.stringify(resp));
+                callback(error, resp);
               } else {
                 const resp = {
                   state: "success",
                   image: `images/images/${event.id}.${format}`,
-                  thumb: `images/thumbnails/${event.id}.${format}`,
+                  thumbnail: `images/thumbnails/${event.id}.${format}`,
                 }
-                callback(error, JSON.stringify(resp));
+                callback(error, resp);
               }
             })
           })
@@ -68,7 +68,7 @@ exports.handler = (event, context, callback) => {
       })
     }else{
       const resp = {state: "failure", message: `get image error: ${error}`}
-      callback(error, JSON.stringify(resp))
+      callback(error, resp)
     }
   })
 };
