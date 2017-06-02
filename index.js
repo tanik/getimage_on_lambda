@@ -20,48 +20,53 @@ exports.handler = (event, context, callback) => {
         }
         const content_type = response.headers['content-type']
         sharp.cache(false)
-        sharp(imageFile).resize(200, 200).max().toFile(thumbFile, (error, info) => {
-          if (error) {
-            const resp = {state: "failure", message: `resize error: ${error}`}
-            callback(error, resp);
-            return
-          }
-          console.log(info)
-          const format = info.format
-          const params = {
-            Bucket: bucket,
-            Key: `images/images/${event.id}.${format}`,
-            Body: fs.createReadStream(imageFile),
-            ContentType: content_type,
-            CacheControl: "max-age=86400",
-            ACL: "public-read",
-          }
-          new aws.S3().upload(params, (error, data) => {
+        const image = sharp(imageFile)
+        image.metadata( (err, metadata) => {
+          image.resize(200, 200).max().toFile(thumbFile, (error, info) => {
             if (error) {
-              const resp = {state: "failure", message: `image upload error: ${error}`}
+              const resp = {state: "failure", message: `resize error: ${error}`}
               callback(error, resp);
               return
             }
+            console.log(info)
+            const format = info.format
             const params = {
               Bucket: bucket,
-              Key: `images/thumbnails/${event.id}.${format}`,
-              Body: fs.createReadStream(thumbFile),
+              Key: `images/images/${event.id}.${format}`,
+              Body: fs.createReadStream(imageFile),
               ContentType: content_type,
               CacheControl: "max-age=86400",
               ACL: "public-read",
             }
             new aws.S3().upload(params, (error, data) => {
               if (error) {
-                const resp = {state: "failure", message: `thumbnail upload error: ${error}`}
+                const resp = {state: "failure", message: `image upload error: ${error}`}
                 callback(error, resp);
-              } else {
-                const resp = {
-                  state: "success",
-                  image: `images/images/${event.id}.${format}`,
-                  thumbnail: `images/thumbnails/${event.id}.${format}`,
-                }
-                callback(error, resp);
+                return
               }
+              const params = {
+                Bucket: bucket,
+                Key: `images/thumbnails/${event.id}.${format}`,
+                Body: fs.createReadStream(thumbFile),
+                ContentType: content_type,
+                CacheControl: "max-age=86400",
+                ACL: "public-read",
+              }
+              new aws.S3().upload(params, (error, data) => {
+                if (error) {
+                  const resp = {state: "failure", message: `thumbnail upload error: ${error}`}
+                  callback(error, resp);
+                } else {
+                  const resp = {
+                    state: "success",
+                    image: `images/images/${event.id}.${format}`,
+                    thumbnail: `images/thumbnails/${event.id}.${format}`,
+                    width: metadata.width,
+                    height: metadata.height,
+                  }
+                  callback(error, resp);
+                }
+              })
             })
           })
         })
