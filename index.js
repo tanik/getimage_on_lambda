@@ -4,7 +4,6 @@ const fs = require('fs')
 const aws = require("aws-sdk")
 const sharp = require('sharp')
 const request = require('request')
-const bucket = 'img.m-ch.xyz'
 const timestamp = parseInt(new Date()*1000)
 const imageFile = `/tmp/image-${timestamp}`
 const thumbFile = `/tmp/thumb-${timestamp}`
@@ -31,7 +30,7 @@ exports.handler = (event, context, callback) => {
             console.log(info)
             const format = info.format
             const params = {
-              Bucket: bucket,
+              Bucket: event.bucket,
               Key: `images/images/${event.id}.${format}`,
               Body: fs.createReadStream(imageFile),
               ContentType: content_type,
@@ -45,7 +44,7 @@ exports.handler = (event, context, callback) => {
                 return
               }
               const params = {
-                Bucket: bucket,
+                Bucket: event.bucket,
                 Key: `images/thumbnails/${event.id}.${format}`,
                 Body: fs.createReadStream(thumbFile),
                 ContentType: content_type,
